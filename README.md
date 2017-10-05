@@ -1,3 +1,8 @@
+# FakeNet
+A Golang HTTP client that can dropped-in for `*http.Client` or any interface that `*http.Client` satisfies. It gives testing flexibility through the use of request interceptors, bypassing the network stack when certain user-described conditions are met. This package is useful in the context of unit tests, where we do not want to depend on the network and need consistent pre-determined responses to requests.
+
+### Example
+The following example illustrates how one could implement a website status checker package. In a production/live environment, we want the requests to be sent through to the network; but in unit tests we want to setup pre-determined responses to the GET requests that it issues.
 ```go
 // website_checker.go
 package checker
