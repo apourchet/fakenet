@@ -31,7 +31,7 @@ import "testing"
 func TestErrorResponse(t *testing.T) {
 	client := fakenet.New()
 	catchall := fakenet.CatchAllInterceptor(nil, errors.New("Fell through to the catch all"))
-    client.Intercept(catchall)
+	client.Intercept(catchall)
     
 	checker := checker.New(client)
 	if checker.IsWebsiteUp() {
@@ -41,7 +41,7 @@ func TestErrorResponse(t *testing.T) {
 
 func TestBadStatusCode(t *testing.T) {
 	client := fakenet.New()
-    client.CatchAll(http.StatusInternalServerError, "Failed to load website.")
+	client.CatchAll(http.StatusInternalServerError, "Failed to load website.")
     
 	checker := checker.New(client)
 	if checker.IsWebsiteUp() {
