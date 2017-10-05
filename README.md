@@ -12,8 +12,8 @@ type HTTPClient interface {
 
 func New(client HTTPClient) Checker {
 	return Checker{
-    	NetworkClient: client,
-    }
+		NetworkClient: client,
+	}
 }
 
 func (checker Checker) IsWebsiteUp() bool {
