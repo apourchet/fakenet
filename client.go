@@ -48,7 +48,7 @@ func (client *HTTPClient) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // CatchAll creates a pre-determined response for all requests going through this client.
 func (client *HTTPClient) CatchAll(code int, response string) {
-	body := newReadCloser(response)
+	body := NewReadCloser(response)
 	resp := &http.Response{StatusCode: code, Body: body}
 	interceptor := CatchAllInterceptor(resp, nil)
 	client.Intercept(interceptor)
@@ -56,7 +56,7 @@ func (client *HTTPClient) CatchAll(code int, response string) {
 
 // InterceptURL creates a pre-determined response for all requests that have the URL specified.
 func (client *HTTPClient) InterceptURL(url string, code int, response string) {
-	body := newReadCloser(response)
+	body := NewReadCloser(response)
 	resp := &http.Response{StatusCode: code, Body: body}
 	interceptor := CatchURLInterceptor(url, resp, nil)
 	client.Intercept(interceptor)
