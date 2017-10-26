@@ -37,7 +37,7 @@ func (client *HTTPClient) RoundTrip(req *http.Request) (*http.Response, error) {
 	client.lock.Lock()
 	for i := len(client.interceptors) - 1; i >= 0; i-- {
 		interceptor := client.interceptors[i]
-		if interceptor.Matches(req) {
+		if interceptor.Matches != nil && interceptor.Matches(req) {
 			client.lock.Unlock()
 			return interceptor.Response, interceptor.Error
 		}
