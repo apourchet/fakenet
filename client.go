@@ -9,10 +9,17 @@ import (
 // It is through this struct that most of the FakeNet operations will be performed.
 // HTTPClient is thread-safe for all operations, just like the standard lib's client.
 type HTTPClient struct {
-	interceptors []Interceptor
-	lock         *sync.Mutex
+	catchers []RequestCatcher
+	lock     *sync.Mutex
 
 	*http.Client
+}
+
+// RequestCatcher is the interface needed for a FakeNet to intercept and respond
+// to requests.
+type RequestCatcher interface {
+	Match(req *http.Request) bool
+	GetResponse(req *http.Request) (*http.Response, error)
 }
 
 // New creates a new FakeNet HTTP client.
@@ -26,20 +33,20 @@ func New() *HTTPClient {
 }
 
 // Intercept adds a request interceptor to the http client. New interceptors will get priority over the old ones.
-func (client *HTTPClient) Intercept(interceptor Interceptor) {
+func (client *HTTPClient) Intercept(catcher RequestCatcher) {
 	client.lock.Lock()
 	defer client.lock.Unlock()
-	client.interceptors = append(client.interceptors, interceptor)
+	client.catchers = append(client.catchers, catcher)
 }
 
 // RoundTrip is the implementation of the http.RoundTripper interface.
 func (client *HTTPClient) RoundTrip(req *http.Request) (*http.Response, error) {
 	client.lock.Lock()
-	for i := len(client.interceptors) - 1; i >= 0; i-- {
-		interceptor := client.interceptors[i]
-		if interceptor.Matches != nil && interceptor.Matches(req) {
+	for i := len(client.catchers) - 1; i >= 0; i-- {
+		catcher := client.catchers[i]
+		if catcher.Match(req) {
 			client.lock.Unlock()
-			return interceptor.Response, interceptor.Error
+			return catcher.GetResponse(req)
 		}
 	}
 	client.lock.Unlock()
@@ -54,7 +61,8 @@ func (client *HTTPClient) CatchAll(code int, response string) {
 	client.Intercept(interceptor)
 }
 
-// InterceptURL creates a pre-determined response for all requests that have the URL specified.
+// InterceptURL creates a pre-determined response for all requests that have the URL specified. The URL can
+// also be a pattern that follows the patterns of the filepath.Match function: https://golang.org/pkg/path/filepath/#Match.
 func (client *HTTPClient) InterceptURL(url string, code int, response string) {
 	body := NewReadCloser(response)
 	resp := &http.Response{StatusCode: code, Body: body}

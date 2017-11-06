@@ -44,6 +44,25 @@ func TestPathInterceptor(t *testing.T) {
 	require.NotNil(t, err)
 }
 
+func TestPathRegexInterceptor(t *testing.T) {
+	client := fakenet.New()
+	catchall := fakenet.CatchAllInterceptor(nil, errors.New("Fell through to the catch all"))
+	client.Intercept(catchall)
+	client.InterceptURL("http://example.org/api/*/file", http.StatusOK, "OK")
+
+	resp, err := client.Get("http://example.org/api/something/file")
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	defer resp.Body.Close()
+	content, err := ioutil.ReadAll(resp.Body)
+	require.Nil(t, err)
+	assert.Equal(t, "OK", string(content))
+
+	resp, err = client.Get("http://example.org/api/file")
+	require.NotNil(t, err)
+}
+
 func TestResponseBody(t *testing.T) {
 	client := fakenet.New()
 	catchall := fakenet.CatchAllInterceptor(nil, errors.New("Fell through to the catch all"))

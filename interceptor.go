@@ -1,6 +1,9 @@
 package fakenet
 
-import "net/http"
+import (
+	"net/http"
+	"path/filepath"
+)
 
 // Interceptor is the interface matches (or not) incoming requests, and
 // contains predetermined responses and errors.
@@ -8,6 +11,19 @@ type Interceptor struct {
 	Matches  func(*http.Request) bool
 	Response *http.Response
 	Error    error
+}
+
+// Match returns whether or not the request is caught by that interceptor.
+func (ic Interceptor) Match(req *http.Request) bool {
+	if ic.Matches == nil {
+		return false
+	}
+	return ic.Matches(req)
+}
+
+// GetResponse returns the response of that interceptor given the request that matched it.
+func (ic Interceptor) GetResponse(_ *http.Request) (*http.Response, error) {
+	return ic.Response, ic.Error
 }
 
 // WithBody returns a new interceptor that returns a body in the response.
@@ -22,7 +38,8 @@ func (ic Interceptor) WithBody(body string) Interceptor {
 // WithURLMatcher returns a new interceptor to match requests with the url provided.
 func (ic Interceptor) WithURLMatcher(url string) Interceptor {
 	ic.Matches = func(req *http.Request) bool {
-		return req.URL.String() == url
+		match, err := filepath.Match(url, req.URL.String())
+		return err == nil && match
 	}
 	return ic
 }
@@ -58,11 +75,13 @@ func CatchAllInterceptor(response *http.Response, err error) Interceptor {
 	}
 }
 
-// CatchURLInterceptor returns an interceptor that catches all requests with the path specified,
+// CatchURLInterceptor returns an interceptor that catches all requests with the URL pattern specified,
 // and returns the response and error given as arguments.
+// See https://golang.org/pkg/path/filepath/#Match for information about what can be in patterns.
 func CatchURLInterceptor(url string, response *http.Response, err error) Interceptor {
 	matcher := func(req *http.Request) bool {
-		return req.URL.String() == url
+		match, err := filepath.Match(url, req.URL.String())
+		return err == nil && match
 	}
 	return Interceptor{
 		Matches:  matcher,
